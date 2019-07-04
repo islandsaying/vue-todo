@@ -8,7 +8,9 @@
       text-decoration: line-through;
       text-decoration-color: brown;
     }
-
+    .selected {
+      color: red
+    }
     .empty {
       border-color: red;
     }
@@ -17,7 +19,10 @@
 <body>
 <div id="todo-app">
   <div>
-    <input type="button" value="全部标为完成"/>
+    <input v-if="leftTodosCount"
+           type="button" 
+           value="全部标为完成"
+           @click="markAllAsCompleted"/>
     <input  type="text" 
             placeholder="添加 todo" 
             v-model="newTodoTitle" 
@@ -26,25 +31,50 @@
   </div>
   <!-- todo list -->
   <ul>
-    <li v-for='todo in todos' :key='todo.id'>
-      <span :class="{completed: todo.completed}">{{ todo.title }}</span>
+    <li v-for='todo in filteredTodos' :key='todo.id'>
+      <span :class="{completed: todo.completed}"
+            :class="{finished: todo.finished}"
+            @dblclick="editTodo(todo)">{{ todo.title }}</span>
       <input type="button" value="标为完成" @click="markAsCompleted(todo)" v-if="!todo.completed">
       <input type="button" value="未完成" @click="markAsUncompleted(todo)" v-else>
       <input type="button" value="删除" @click="removeTodo(todo)">
-      <input type="text" value="编辑 todo..."/>
+      <input type="text" value="编辑 todo..." 
+             v-focus="true"
+             v-if="editedTodo !==null && editedTodo.id === todo.id "
+             v-model="todo.title"
+             @keyup.enter="editDone(todo)"
+             @keyup.esc="cancelEdit(todo)"/>
     </li>
   </ul>
+  <span v-if="leftTodosCount">剩余 {{ leftTodosCount }}项未完成----</span>
+  <span v-else-if="completedTodosCount">全部完成,你真是太优秀了!</span>
+  <span v-else>添加我的第一个todo</span>
+  <span>筛选:
+    <input type="button" value="全部" 
+           :class="{selected: intention==='all'}"
+           @click="intention='all'">
+    <input type="button" value="进行中"
+           :class="{selected: intention==='ongoing'}"
+           @click="intention='ongoing'">
+    <input type="button" value="已完成"
+           :class="{selected: intention==='finished'}"
+           @click="intention='finished'">
+    <input type="button" value="清除已完成" @click="clearCompleted">
+    <input type="button" value="清除全部" @click="clearAll">
+  </span>
   <!-- end todo list -->
 </div>
-<script src="https://cdn.bootcss.com/vue/2.5.16/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
 <script>
-    let id = 0;
+    let id = 0; // 用于id生成
     var app = new Vue({
         el: '#todo-app',
         data: function () {
             return {
                 todos: [],
-                newTodoTitle: ''  
+                newTodoTitle: '',
+                editedTodo: null,//用于暂存编辑前的 todo 状态  
+                intention: 'all', //默认为all
             }
         },
         methods:{
@@ -61,11 +91,68 @@
             markAsUncompleted: function(todo){
               todo.completed = false
             },
-            removeTodo: function(todo) {
+            removeTodo: function(todo){
               if(!confirm('确认删除?')){return}
               this.todos.splice(this.todos.indexOf(todo),1)
-            } 
-        }
+            },
+            editTodo: function(todo){
+              this.editedTodo = {id: todo.id,title: todo.title, finished: todo.finished}
+            },
+            editDone: function(todo){
+              if(todo.title === ''){
+                  this.removeTodo(todo)
+              }
+              this.editedTodo = null;
+            },
+            cancelEdit: function(todo){
+              todo.title = this.editedTodo.title;
+              this.editedTodo = null;
+            },
+            markAllAsCompleted: function(){
+              this.todos.map(function(todo){
+                if(!todo.completed){
+                  todo.completed = true
+                }
+              })
+            },
+            clearCompleted: function(){
+              if(!confirm('确认清除全部已完成的代办事项?')){return}
+              this.todos = this.todos.filter(todo => !todo.completed)
+            },
+            clearAll: function(){
+              if(!confirm('确认清除全部待办事项?')){return}
+              this.todos = []
+            }
+        },
+        computed:{
+          completedTodos: function(){
+            return this.todos.filter(todo => todo.completed)
+          },
+          completedTodosCount: function(){
+            return this.completedTodos.length
+          },
+          leftTodosCount: function(){
+            return this.todos.filter(todo => !todo.completed).length
+          },
+          filteredTodos: function(){
+            if(this.intention === 'ongoing') {
+              return this.todos.filter(todo => !todo.finished)
+            }else if(this.intention === 'finished'){
+              return this.todos.filter(todo => todo.finished)
+            }else {
+              //其他就是全部返回todos
+              //这里已经包含了all意图了
+              return this.todos
+            }
+          }
+        },
+        directives: {
+          focus: {
+              inserted: function(el){
+                el.focus()
+            }
+          }
+        },
     })
 </script>
 </body>
