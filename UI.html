@@ -6,10 +6,11 @@
   <style>
     .completed {
       text-decoration: line-through;
+      text-decoration-color: brown;
     }
 
-    .selected {
-      color: red;
+    .empty {
+      border-color: red;
     }
   </style>
 </head>
@@ -20,43 +21,24 @@
     <input  type="text" 
             placeholder="添加 todo" 
             v-model="newTodoTitle" 
-            @keyup.enter="addTodo"/>
+            @keyup.enter="addTodo"
+            v-bind:class="{empty:!newTodoTitle}"/>
   </div>
   <!-- todo list -->
   <ul>
-    <li>
-      <span class="completed">学习 Vue</span>
-      <input type="button" value="标为完成">
-      <input type="button" value="删除">
-      <input type="text" value="编辑 todo..."/>
-    </li>
-    <li>
-      <span>整个牛项目</span>
-      <input type="button" value="标为完成">
-      <input type="button" value="删除">
-      <input type="text" value="编辑 todo..."/>
-    </li>
-    <li>
-      <span>迎娶白富美走上人生巅峰</span>
-      <input type="button" value="标为完成">
-      <input type="button" value="删除">
+    <li v-for='todo in todos' :key='todo.id'>
+      <span :class="{completed: todo.completed}">{{ todo.title }}</span>
+      <input type="button" value="标为完成" @click="markAsCompleted(todo)" v-if="!todo.completed">
+      <input type="button" value="未完成" @click="markAsUncompleted(todo)" v-else>
+      <input type="button" value="删除" @click="removeTodo(todo)">
       <input type="text" value="编辑 todo..."/>
     </li>
   </ul>
   <!-- end todo list -->
-  <div>
-    <span>剩余 3 项未完成 ---</span>
-    <span>筛选：
-      <input type="button" class="selected" value="全部">
-      <input type="button" value="进行中">
-      <input type="button" value="已完成">
-      <input type="button" value="清除已完成">
-      <input type="button" value="清除全部">
-    </span>
-  </div>
 </div>
 <script src="https://cdn.bootcss.com/vue/2.5.16/vue.js"></script>
 <script>
+    let id = 0;
     var app = new Vue({
         el: '#todo-app',
         data: function () {
@@ -67,9 +49,22 @@
         },
         methods:{
             addTodo:function(){
-                this.todos.push({id: id++,title: this.newTodoTitle})
-                this.newTodoTitle = ''
-            }
+              if(this.newTodoTitle == ''){
+                alert('请输入内容')
+              }else{
+                this.todos.push({id: id++,title: this.newTodoTitle,completed: false});
+              };
+            },
+            markAsCompleted: function(todo){
+              todo.completed = true
+            },
+            markAsUncompleted: function(todo){
+              todo.completed = false
+            },
+            removeTodo: function(todo) {
+              if(!confirm('确认删除?')){return}
+              this.todos.splice(this.todos.indexOf(todo),1)
+            } 
         }
     })
 </script>
